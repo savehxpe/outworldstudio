@@ -46,7 +46,7 @@ export async function POST(req: NextRequest) {
         .eq("id", job.project_id)
         .single()
 
-      if (project) {
+      if (project?.user_id) {
         await getSupabaseAdmin().rpc("deduct_credits", {
           user_id: project.user_id,
           amount: job.credits_consumed,

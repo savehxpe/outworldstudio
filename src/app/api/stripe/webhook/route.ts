@@ -1,3 +1,4 @@
+import type Stripe from "stripe"
 import { NextRequest, NextResponse } from "next/server"
 import { getStripe } from "@/lib/stripe"
 import { getSupabaseAdmin } from "@/lib/supabase"
@@ -18,7 +19,7 @@ export async function POST(req: NextRequest) {
     )
 
     if (event.type === "checkout.session.completed") {
-      const session = event.data.object as any
+      const session = event.data.object as Stripe.Checkout.Session
       const userId = session.metadata?.userId
       const credits = parseInt(session.metadata?.credits || "0")
 
@@ -32,7 +33,7 @@ export async function POST(req: NextRequest) {
         await admin.from("billing").insert({
           user_id: userId,
           stripe_session_id: session.id,
-          stripe_payment_intent_id: session.payment_intent,
+          stripe_payment_intent_id: typeof session.payment_intent === "string" ? session.payment_intent : null,
           amount: session.amount_total,
           credits_purchased: credits,
           status: "completed",

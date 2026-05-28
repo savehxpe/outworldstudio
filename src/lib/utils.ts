@@ -1,7 +1,7 @@
 import { clsx, type ClassValue } from "clsx"
 
 export function cn(...inputs: ClassValue[]) {
-  return inputs.filter(Boolean).join(" ")
+  return clsx(inputs)
 }
 
 export function formatDuration(seconds: number): string {

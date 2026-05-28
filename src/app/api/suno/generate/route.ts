@@ -1,8 +1,10 @@
 import { NextRequest, NextResponse } from "next/server"
 import { getSupabaseAdmin } from "@/lib/supabase"
-import { separateVocals, splitStem } from "@/lib/suno"
+import { separateVocals, splitStem, type StemType, type ProcessingMode } from "@/lib/suno"
 import { enqueueJob } from "@/lib/queue"
 import { absoluteUrl, generateId } from "@/lib/utils"
+
+export const maxDuration = 60
 
 export async function POST(req: NextRequest) {
   try {
@@ -22,7 +24,7 @@ export async function POST(req: NextRequest) {
 
     const buffer = Buffer.from(await file.arrayBuffer())
     const projectId = generateId()
-    const userId = req.headers.get("x-user-id") || "anonymous"
+    const userId = req.headers.get("x-user-id") || null
     const fileName = `${userId}/${projectId}/${file.name}`
 
     const { error: uploadError } = await getSupabaseAdmin().storage
@@ -55,7 +57,7 @@ export async function POST(req: NextRequest) {
 
     let result
     if (mode === "split_stem" && stemType) {
-      result = await splitStem(publicUrl, stemType as any, webhookUrl)
+      result = await splitStem(publicUrl, stemType as StemType, webhookUrl)
     } else {
       result = await separateVocals(publicUrl, webhookUrl)
     }
@@ -70,7 +72,7 @@ export async function POST(req: NextRequest) {
       credits_consumed: mode === "split_stem" ? 25 : 10,
     })
 
-    await enqueueJob(mode as any, {
+    await enqueueJob((mode || "separate_vocal") as ProcessingMode, {
       projectId,
       userId,
       sunoJobId: result.id,
