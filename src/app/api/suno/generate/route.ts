@@ -3,6 +3,7 @@ import { getSupabaseAdmin } from "@/lib/supabase"
 import { separateVocals, splitStem, type StemType, type ProcessingMode } from "@/lib/suno"
 import { enqueueJob } from "@/lib/queue"
 import { absoluteUrl, generateId } from "@/lib/utils"
+import { CREDIT_COSTS } from "@/types"
 
 export const maxDuration = 60
 
@@ -22,9 +23,54 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: "Unsupported format. Use MP3, WAV, or FLAC" }, { status: 400 })
     }
 
+    const userId = req.headers.get("x-user-id")
+    if (!userId) {
+      return NextResponse.json({ error: "Authentication required" }, { status: 401 })
+    }
+
+    const creditCost = mode === "split_stem" ? CREDIT_COSTS.split_stem : CREDIT_COSTS.separate_vocal
+
+    const { data: user, error: userError } = await getSupabaseAdmin()
+      .from("users")
+      .select("credits, tier")
+      .eq("id", userId)
+      .single()
+
+    if (userError || !user) {
+      return NextResponse.json({ error: "User not found" }, { status: 404 })
+    }
+
+    if (user.credits < creditCost) {
+      const needed = creditCost - user.credits
+      return NextResponse.json(
+        {
+          error: "Insufficient credits",
+          code: "insufficient_credits",
+          needed,
+          upgradeUrl: "/pricing",
+        },
+        { status: 402 }
+      )
+    }
+
+    if (user.tier === "free" && mode === "split_stem") {
+      return NextResponse.json(
+        {
+          error: "Stem splitting requires a paid plan",
+          code: "upgrade_required",
+          upgradeUrl: "/pricing",
+        },
+        { status: 402 }
+      )
+    }
+
+    await getSupabaseAdmin().rpc("deduct_credits", {
+      user_id: userId,
+      amount: creditCost,
+    })
+
     const buffer = Buffer.from(await file.arrayBuffer())
     const projectId = generateId()
-    const userId = req.headers.get("x-user-id") || null
     const fileName = `${userId}/${projectId}/${file.name}`
 
     const { error: uploadError } = await getSupabaseAdmin().storage
@@ -69,7 +115,7 @@ export async function POST(req: NextRequest) {
       stem_type: stemType,
       suno_job_id: result.id,
       status: "processing",
-      credits_consumed: mode === "split_stem" ? 25 : 10,
+      credits_consumed: creditCost,
     })
 
     await enqueueJob((mode || "separate_vocal") as ProcessingMode, {

@@ -39,24 +39,18 @@ export async function POST(req: NextRequest) {
         .from("projects")
         .update({ status: "completed", updated_at: new Date().toISOString() })
         .eq("id", job.project_id)
-
-      const { data: project } = await getSupabaseAdmin()
-        .from("projects")
-        .select("user_id")
-        .eq("id", job.project_id)
-        .single()
-
-      if (project?.user_id) {
-        await getSupabaseAdmin().rpc("deduct_credits", {
-          user_id: project.user_id,
-          amount: job.credits_consumed,
-        })
-      }
     } else if (status === "failed") {
       await getSupabaseAdmin()
         .from("projects")
         .update({ status: "failed", updated_at: new Date().toISOString() })
         .eq("id", job.project_id)
+
+      if (job.user_id) {
+        await getSupabaseAdmin().rpc("add_credits", {
+          user_id: job.user_id,
+          amount: job.credits_consumed,
+        })
+      }
 
       await getSupabaseAdmin()
         .from("processing_jobs")

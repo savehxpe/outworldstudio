@@ -8,6 +8,9 @@ const envSchema = z.object({
   STRIPE_SECRET_KEY: z.string().min(1),
   NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY: z.string().min(1),
   STRIPE_WEBHOOK_SECRET: z.string().min(1),
+  STRIPE_PRICE_HOBBY: z.string().default(""),
+  STRIPE_PRICE_PRO: z.string().default(""),
+  STRIPE_PRICE_STUDIO: z.string().default(""),
   REDIS_URL: z.string().url().default("redis://localhost:6379"),
   NEXT_PUBLIC_APP_URL: z.string().url().default("http://localhost:3000"),
 })
@@ -30,6 +33,9 @@ export function getEnv() {
     stripeSecretKey: process.env.STRIPE_SECRET_KEY!,
     stripePublishableKey: process.env.NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY!,
     stripeWebhookSecret: process.env.STRIPE_WEBHOOK_SECRET!,
+    stripePriceHobby: process.env.STRIPE_PRICE_HOBBY!,
+    stripePricePro: process.env.STRIPE_PRICE_PRO!,
+    stripePriceStudio: process.env.STRIPE_PRICE_STUDIO!,
     redisUrl: process.env.REDIS_URL || "redis://localhost:6379",
     appUrl: process.env.NEXT_PUBLIC_APP_URL || "http://localhost:3000",
   }

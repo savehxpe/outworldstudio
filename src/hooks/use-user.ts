@@ -13,6 +13,11 @@ function mapUser(row: Record<string, unknown>): User {
     avatarUrl: (row.avatar_url as string) ?? undefined,
     credits: row.credits as number,
     stripeCustomerId: (row.stripe_customer_id as string) ?? undefined,
+    tier: (row.tier as User["tier"]) ?? "free",
+    stripeSubscriptionId: (row.stripe_subscription_id as string) ?? undefined,
+    trialEndsAt: (row.trial_ends_at as string) ?? undefined,
+    subscriptionStatus: (row.subscription_status as string) ?? undefined,
+    monthlyCredits: (row.monthly_credits as number) ?? 0,
   }
 }
 

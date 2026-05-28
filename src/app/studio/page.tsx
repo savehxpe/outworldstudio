@@ -11,6 +11,7 @@ import { AudioPreview } from "@/components/studio/audio-preview"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { Card } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
+import { useAppStore } from "@/store/use-app-store"
 
 type ProcessingMode = "separate_vocal" | "split_stem"
 type StemType = "drums" | "bass" | "vocals" | "other"
@@ -23,6 +24,7 @@ const stemOptions: { type: StemType; label: string; icon: typeof Music }[] = [
 ]
 
 export default function StudioPage() {
+  const { user } = useAppStore()
   const [mode, setMode] = useState<ProcessingMode>("separate_vocal")
   const [selectedStem, setSelectedStem] = useState<StemType>("drums")
   const [processing, setProcessing] = useState(false)
@@ -43,11 +45,24 @@ export default function StudioPage() {
 
       const res = await fetch("/api/suno/generate", {
         method: "POST",
+        headers: user?.id ? { "x-user-id": user.id } : {},
         body: formData,
       })
 
       if (!res.ok) {
         const err = await res.json()
+        if (err.code === "insufficient_credits") {
+          toast.error(`Not enough credits. Need ${err.needed} more.`, {
+            action: { label: "Upgrade", onClick: () => window.location.href = err.upgradeUrl },
+          })
+          return
+        }
+        if (err.code === "upgrade_required") {
+          toast.error(err.error, {
+            action: { label: "View Plans", onClick: () => window.location.href = err.upgradeUrl },
+          })
+          return
+        }
         throw new Error(err.error || "Processing failed")
       }
 

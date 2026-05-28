@@ -5,8 +5,9 @@ import { usePathname } from "next/navigation"
 import { motion } from "framer-motion"
 import { Menu, X } from "lucide-react"
 import { useAppStore } from "@/store/use-app-store"
-import { cn } from "@/lib/utils"
+import { cn, formatCredits } from "@/lib/utils"
 import { useState } from "react"
+import type { Tier } from "@/types"
 
 const navLinks = [
   { href: "/dashboard", label: "Dashboard" },
@@ -16,12 +17,22 @@ const navLinks = [
   { href: "/pricing", label: "Pricing" },
 ]
 
+const tierBadge: Record<Tier, { label: string; color: string }> = {
+  free: { label: "Free", color: "text-outline border-outline/30" },
+  hobby: { label: "Hobby", color: "text-primary border-primary/40" },
+  pro: { label: "Pro", color: "text-primary border-primary" },
+  studio: { label: "Studio", color: "text-secondary border-secondary/60" },
+}
+
 export function Navbar() {
   const pathname = usePathname()
   const { user, toggleSidebar, sidebarOpen } = useAppStore()
   const [mobileOpen, setMobileOpen] = useState(false)
 
   if (pathname === "/") return null
+
+  const tier = (user?.tier ?? "free") as Tier
+  const badge = tierBadge[tier]
 
   return (
     <nav className="fixed top-0 w-full z-50 flex items-center justify-between px-8 h-16 bg-surface/60 backdrop-blur-xl border-b border-white/10 shadow-[0_0_15px_rgba(0,219,233,0.1)]">
@@ -48,12 +59,21 @@ export function Navbar() {
         ))}
       </div>
 
-      <div className="flex items-center gap-4 text-primary">
+      <div className="flex items-center gap-4">
         {user ? (
           <div className="flex items-center gap-3">
-            <span className="text-xs font-mono text-on-surface-variant">
-              {(user.credits ?? 0)} cr
+            <span className={cn(
+              "text-[10px] font-mono tracking-wider uppercase px-2 py-0.5 rounded-full border",
+              badge.color
+            )}>
+              {badge.label}
             </span>
+            <Link
+              href="/pricing"
+              className="text-xs font-mono text-on-surface-variant hover:text-primary transition-colors"
+            >
+              {formatCredits(user.credits ?? 0)} cr
+            </Link>
             <div className="w-8 h-8 rounded-full bg-surface-container overflow-hidden border border-outline-variant/30">
               <div className="w-full h-full bg-gradient-to-br from-primary/30 to-secondary-container/30 flex items-center justify-center text-xs font-mono text-primary">
                 {user.email?.charAt(0).toUpperCase() || "U"}

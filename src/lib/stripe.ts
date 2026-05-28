@@ -1,4 +1,6 @@
 import Stripe from "stripe"
+import type { Tier } from "@/types"
+import { SUBSCRIPTION_TIERS } from "@/types"
 
 let _stripe: Stripe | null = null
 
@@ -11,23 +13,54 @@ export function getStripe(): Stripe {
   return _stripe
 }
 
-export const CREDIT_PACKAGES = [
-  { id: "starter", credits: 100, price: 12, label: "Starter" },
-  { id: "pro", credits: 500, price: 49, label: "Pro" },
-  { id: "studio", credits: 2000, price: 149, label: "Studio" },
-] as const
+function getPriceId(tier: Tier): string {
+  const t = SUBSCRIPTION_TIERS.find((t) => t.id === tier)
+  if (!t || !t.priceIdEnv) throw new Error(`No price ID for tier: ${tier}`)
+  const id = process.env[t.priceIdEnv]
+  if (!id) throw new Error(`Missing env var: ${t.priceIdEnv}`)
+  return id
+}
 
-export async function createCheckoutSession(
+export function getTierFromPriceId(priceId: string): Tier | null {
+  for (const t of SUBSCRIPTION_TIERS) {
+    if (!t.priceIdEnv) continue
+    if (process.env[t.priceIdEnv] === priceId) return t.id
+  }
+  return null
+}
+
+export async function createSubscriptionCheckout(
   userId: string,
-  priceId: string,
-  credits: number
+  tier: Tier,
+  customerEmail?: string
 ) {
   const s = getStripe()
+  const priceId = getPriceId(tier)
+
   return s.checkout.sessions.create({
-    mode: "payment",
+    mode: "subscription",
     line_items: [{ price: priceId, quantity: 1 }],
-    metadata: { userId, credits: String(credits) },
-    success_url: `${process.env.NEXT_PUBLIC_APP_URL}/dashboard?credits=success`,
+    customer_email: customerEmail,
+    subscription_data: {
+      trial_period_days: 7,
+      metadata: { userId, tier },
+    },
+    metadata: { userId, tier },
+    success_url: `${process.env.NEXT_PUBLIC_APP_URL}/dashboard?checkout=success`,
     cancel_url: `${process.env.NEXT_PUBLIC_APP_URL}/pricing`,
   })
+}
+
+export async function createPortalSession(customerId: string) {
+  const s = getStripe()
+  return s.billingPortal.sessions.create({
+    customer: customerId,
+    return_url: `${process.env.NEXT_PUBLIC_APP_URL}/settings`,
+  })
+}
+
+export async function getCustomerIdFromSubscription(subscriptionId: string) {
+  const s = getStripe()
+  const sub = await s.subscriptions.retrieve(subscriptionId)
+  return typeof sub.customer === "string" ? sub.customer : sub.customer.id
 }

@@ -48,6 +48,8 @@ export type Database = {
           status: string
           stripe_payment_intent_id: string | null
           stripe_session_id: string | null
+          stripe_subscription_id: string | null
+          tier: string | null
           user_id: string | null
         }
         Insert: {
@@ -58,6 +60,8 @@ export type Database = {
           status?: string
           stripe_payment_intent_id?: string | null
           stripe_session_id?: string | null
+          stripe_subscription_id?: string | null
+          tier?: string | null
           user_id?: string | null
         }
         Update: {
@@ -68,6 +72,8 @@ export type Database = {
           status?: string
           stripe_payment_intent_id?: string | null
           stripe_session_id?: string | null
+          stripe_subscription_id?: string | null
+          tier?: string | null
           user_id?: string | null
         }
         Relationships: []
@@ -225,28 +231,46 @@ export type Database = {
           avatar_url: string | null
           created_at: string
           credits: number
+          credits_last_refreshed_at: string | null
           email: string | null
           id: string
+          monthly_credits: number
           name: string | null
           stripe_customer_id: string | null
+          stripe_subscription_id: string | null
+          subscription_status: string | null
+          tier: string
+          trial_ends_at: string | null
         }
         Insert: {
           avatar_url?: string | null
           created_at?: string
           credits?: number
+          credits_last_refreshed_at?: string | null
           email?: string | null
           id: string
+          monthly_credits?: number
           name?: string | null
           stripe_customer_id?: string | null
+          stripe_subscription_id?: string | null
+          subscription_status?: string | null
+          tier?: string
+          trial_ends_at?: string | null
         }
         Update: {
           avatar_url?: string | null
           created_at?: string
           credits?: number
+          credits_last_refreshed_at?: string | null
           email?: string | null
           id?: string
+          monthly_credits?: number
           name?: string | null
           stripe_customer_id?: string | null
+          stripe_subscription_id?: string | null
+          subscription_status?: string | null
+          tier?: string
+          trial_ends_at?: string | null
         }
         Relationships: []
       }

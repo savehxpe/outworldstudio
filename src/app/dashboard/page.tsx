@@ -2,16 +2,11 @@
 
 import { motion } from "framer-motion"
 import Link from "next/link"
-import { ArrowRight, Music, Layers, BarChart3, TrendingUp, Clock } from "lucide-react"
+import { ArrowRight, Layers, BarChart3, Clock } from "lucide-react"
 import { Navbar } from "@/components/layout/navbar"
 import { Waveform } from "@/components/studio/waveform"
-
-const stats = [
-  { label: "Projects", value: "12", icon: Music },
-  { label: "Stems Generated", value: "48", icon: Layers },
-  { label: "Credits Remaining", value: "340", icon: BarChart3 },
-  { label: "Processing Time", value: "2.4s", icon: Clock },
-]
+import { useAppStore } from "@/store/use-app-store"
+import { formatCredits } from "@/lib/utils"
 
 const recentProjects = [
   { id: "1", title: "Summer Heat Remix", status: "completed", date: "2h ago", stems: 4 },
@@ -21,6 +16,16 @@ const recentProjects = [
 ]
 
 export default function DashboardPage() {
+  const { user } = useAppStore()
+
+  const credits = user?.credits ?? 0
+  const tier = user?.tier ?? "free"
+
+  const stats = [
+    { label: "Credits Remaining", value: formatCredits(credits), icon: BarChart3 },
+    { label: "Tier", value: tier.charAt(0).toUpperCase() + tier.slice(1), icon: Clock },
+  ]
+
   return (
     <>
       <Navbar />
@@ -36,7 +41,7 @@ export default function DashboardPage() {
           <p className="text-on-surface-variant">Welcome back. Your sonic command center.</p>
         </motion.div>
 
-        <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-12">
+        <div className="grid grid-cols-2 gap-4 mb-12 max-w-md">
           {stats.map((stat, i) => (
             <motion.div
               key={stat.label}
